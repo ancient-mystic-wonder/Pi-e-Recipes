@@ -1,0 +1,55 @@
+Examples:
+'abcdef'
+     Matches 'abcdef'.
+
+'a*b'
+     Matches zero or more 'a's followed by a single 'b'.  For example,
+     'b' or 'aaaaab'.
+
+'a\?b'
+     Matches 'b' or 'ab'.
+
+'a\+b\+'
+     Matches one or more 'a's followed by one or more 'b's: 'ab' is the
+     shortest possible match, but other examples are 'aaaab' or 'abbbbb'
+     or 'aaaaaabbbbbbb'.
+
+'.*'
+'.\+'
+     These two both match all the characters in a string; however, the
+     first matches every string (including the empty string), while the
+     second matches only strings containing at least one character.
+
+'^main.*(.*)'
+     This matches a string starting with 'main', followed by an opening
+     and closing parenthesis.  The 'n', '(' and ')' need not be
+     adjacent.
+
+'^#'
+     This matches a string beginning with '#'.
+
+'\\$'
+     This matches a string ending with a single backslash.  The regexp
+     contains two backslashes for escaping.
+
+'\$'
+     Instead, this matches a string consisting of a single dollar sign,
+     because it is escaped.
+
+'[a-zA-Z0-9]'
+     In the C locale, this matches any ASCII letters or digits.
+
+'[^ <TAB>]\+'
+     (Here <TAB> stands for a single tab character.)  This matches a
+     string of one or more characters, none of which is a space or a tab.  Usually this means a word.
+
+'^\(.*\)\n\1$'
+     This matches a string consisting of two equal substrings separated
+     by a newline.
+
+'.\{9\}A$'
+     This matches nine characters followed by an 'A'.
+
+'^.\{15\}A'
+     This matches the start of a string that contains 16 characters, the
+     last of which is an 'A'.
