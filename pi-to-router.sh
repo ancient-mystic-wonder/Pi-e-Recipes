@@ -20,13 +20,13 @@ else
 	DNSMASQ_CONF_FILE="/etc/dnsmasq.conf"
 fi
 
-IP_ADDR="192.168.1.100"
+IP_ADDR="192.168.1.119"
 NETMASK="255.255.255.0"
 NETWORK="192.168.1.1"
 BROADCAST="192.168.1.255"
 
-IFACE_IN="wlan0"
-IFACE_OUT="wlan1"
+IFACE_IN="wlan1"
+IFACE_OUT="wlan0"
 PI_ROUTER_SSID="Pi3-AP"
 PI_ROUTER_PASSWORD="raspberry"
 DHCP_RANGE_START="192.168.1.50"
@@ -59,13 +59,15 @@ echo "Replacing $NETWORK_INTERFACE_FILE entries."
 sed -i.bak -e "{N;s|$iface_manual|$iface_static|}" "$NETWORK_INTERFACE_FILE"
 
 # Restart dhcpcd
-if [$DEBUG -eq 1]
+if [ $DEBUG -eq 1 ]
 then
 	echo "Restarting dhcpcd"
 	service dhcpcd restart
 	echo "Setting up $IFACE_OUT interface"
 	ifdown $IFACE_OUT
 	ifup $IFACE_OUT
+	ifdown $IFACE_IN
+	ifup $IFACE_IN
 fi
 
 ## Open template hostapd.conf file and do replacements
@@ -86,7 +88,7 @@ sed -e "s/\${IFACE_OUT}/$IFACE_OUT/" \
 	-e "s/\${DHCP_RANGE_END}/$DHCP_RANGE_END/" dnsmasq-template.conf > $DNSMASQ_CONF_FILE
 
 # Enable ipv4 forwarding
-if [$DEBUG -eq 1]
+if [ $DEBUG -eq 1 ]
 then
 	echo "Enabling ipv4 forwarding"
 	sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
