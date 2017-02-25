@@ -15,31 +15,38 @@ NETMASK="255.255.255.0"
 NETWORK="192.168.1.1"
 BROADCAST="192.168.1.255"
 
-IFACE_IN="eth0"
-IFACE_OUT="wlan0"
+IFACE_IN="wlan0"
+IFACE_OUT="wlan1"
 PI_ROUTER_SSID="Pi3-AP"
 PI_ROUTER_PASSWORD="raspberry"
 DHCP_RANGE_START="192.168.1.50"
 DHCP_RANGE_END="192.168.1.150"
 
 ## Deny wlan interface which will be used for outgoing traffic.
-to_add="denyinterfaces wlan0"
+to_add="denyinterfaces $IFACE_OUT"
 if grep -Fxq "$to_add" $DHCP_CONF; then
-	echo "Interface wlan0 already denied."
+	echo "Interface $IFACE_OUT already denied."
 else
 	echo $to_add >> $DHCP_CONF
-	echo "Interface wlan0 denied in $DHCP_CONF"
+	echo "Interface $IFACE_OUT denied in $DHCP_CONF"
 fi
 
 ## Make the outgoing network interface use static ip
-iface_dynamic="iface $IFACE_OUT inet dynamic"
+
+#iface_dynamic="iface $IFACE_OUT inet dynamic"
+
+iface_manual="iface $IFACE_OUT inet manual\n\
+    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf"
+
 iface_static="iface $IFACE_OUT inet static\n\
 \taddress ${IP_ADDR}\n\
 \tnetmask ${NETMASK}\n\
 \tnetwork ${NETWORK}\n\
 \tbroadcast ${BROADCAST}"
 
-sed -i.bak "s/$iface_dynamic/$iface_static/" "$NETWORK_INTERFACE_FILE"
+echo "Replacing $iface_manual"
+
+sed -i.bak -e "{N;s|$iface_manual|$iface_static|}" "$NETWORK_INTERFACE_FILE"
 
 ## Open template hostapd.conf file and do replacements
 sed -e "s/\${IFACE_OUT}/$IFACE_OUT/" \
