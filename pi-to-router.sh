@@ -3,12 +3,22 @@
 ## Original tutorial: https://frillip.com/using-your-raspberry-pi-3-as-a-wifi-access-point-with-hostapd/
 ## https://webcache.googleusercontent.com/search?q=cache:8nfWTN8xUhwJ:https://frillip.com/using-your-raspberry-pi-3-as-a-wifi-access-point-with-hostapd/+&cd=1&hl=en&ct=clnk&gl=ph
 
-DHCP_CONF="etc/dhcpcd.conf"
-NETWORK_INTERFACE_FILE="etc/network/interfaces"
-HOSTAPD_CONF_FILE="etc/hostapd/hostapd.conf"
-HOSTAPD_DEFAULT_CONF_FILE="etc/default/hostapd"
-DNSMASQ_CONF_FILE="etc/dnsmasq.conf"
+DEBUG=0
 
+if [ $DEBUG -eq 1 ]
+then
+	DHCP_CONF="etc/dhcpcd.conf"
+	NETWORK_INTERFACE_FILE="etc/network/interfaces"
+	HOSTAPD_CONF_FILE="etc/hostapd/hostapd.conf"
+	HOSTAPD_DEFAULT_CONF_FILE="etc/default/hostapd"
+	DNSMASQ_CONF_FILE="etc/dnsmasq.conf"
+else
+	DHCP_CONF="/etc/dhcpcd.conf"
+	NETWORK_INTERFACE_FILE="/etc/network/interfaces"
+	HOSTAPD_CONF_FILE="/etc/hostapd/hostapd.conf"
+	HOSTAPD_DEFAULT_CONF_FILE="/etc/default/hostapd"
+	DNSMASQ_CONF_FILE="/etc/dnsmasq.conf"
+fi
 
 IP_ADDR="192.168.1.100"
 NETMASK="255.255.255.0"
@@ -44,25 +54,46 @@ iface_static="iface $IFACE_OUT inet static\n\
 \tnetwork ${NETWORK}\n\
 \tbroadcast ${BROADCAST}"
 
-echo "Replacing $iface_manual"
+echo "Replacing $NETWORK_INTERFACE_FILE entries."
 
 sed -i.bak -e "{N;s|$iface_manual|$iface_static|}" "$NETWORK_INTERFACE_FILE"
 
+# Restart dhcpcd
+if [$DEBUG -eq 1]
+then
+	echo "Restarting dhcpcd"
+	service dhcpcd restart
+	echo "Setting up $IFACE_OUT interface"
+	ifdown $IFACE_OUT
+	ifup $IFACE_OUT
+fi
+
 ## Open template hostapd.conf file and do replacements
+echo "Writing to $HOSTAPD_CONF_FILE"
 sed -e "s/\${IFACE_OUT}/$IFACE_OUT/" \
 	-e "s/\${PI_ROUTER_SSID}/$PI_ROUTER_SSID/" \
 	-e "s/\${PI_ROUTER_PASSWORD}/$PI_ROUTER_PASSWORD/" hostapd-template.conf > $HOSTAPD_CONF_FILE
 
 ## Edit hostapd default configuration file for startup
-sed -i.bak 's|.*DAEMON_CONF=".*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' $HOSTAPD_DEFAULT_CONF_FILE
+echo "Editing $HOSTAPD_DEFAULT_CONF_FILE, setting conf to $HOSTAPD_CONF_FILE"
+sed -i.bak 's|.*DAEMON_CONF=".*|DAEMON_CONF="$HOSTAPD_CONF_FILE"|' $HOSTAPD_DEFAULT_CONF_FILE
 
 ## Open template dnsmasq.conf file and do replacements
+echo "Writing to $DNSMASQ_CONF_FILE"
 sed -e "s/\${IFACE_OUT}/$IFACE_OUT/" \
 	-e "s/\${IP_ADDR}/$IP_ADDR/" \
 	-e "s/\${DHCP_RANGE_START}/$DHCP_RANGE_START/" \
 	-e "s/\${DHCP_RANGE_END}/$DHCP_RANGE_END/" dnsmasq-template.conf > $DNSMASQ_CONF_FILE
 
+# Enable ipv4 forwarding
+if [$DEBUG -eq 1]
+then
+	echo "Enabling ipv4 forwarding"
+	sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
+fi
+
 # Setup iptables
+echo "Adding iptables entries"
 iptables -t nat -A POSTROUTING -o $IFACE_IN -j MASQUERADE
 iptables -A FORWARD -i $IFACE_IN -o $IFACE_OUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 iptables -A FORWARD -i $IFACE_OUT -o $IFACE_IN -j ACCEPT
