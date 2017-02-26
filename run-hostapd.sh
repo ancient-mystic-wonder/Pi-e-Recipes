@@ -1,5 +1,6 @@
 #!/bin/sh
 
-# Need this because I keep forgetting the command
+service dnsmasq start
+service hostapd start
 
 /usr/sbin/hostapd /etc/hostapd/hostapd.conf

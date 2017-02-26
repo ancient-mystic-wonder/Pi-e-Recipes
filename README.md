@@ -1,4 +1,4 @@
-1) run clear-iptables first
-2) run pi-to-router
-3) script doesn't do ifdown ifup. do it manually.
-4) run run-hostapd
+0) run cleanup.sh to be sure
+1) run pi-to-router.sh
+2) run run-hostapd.sh
+3) (WIP) if you wish to undo, run cleanup.sh

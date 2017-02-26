@@ -59,11 +59,11 @@ echo "Replacing $NETWORK_INTERFACE_FILE entries."
 sed -i.bak -e "{N;s|$iface_manual|$iface_static|}" "$NETWORK_INTERFACE_FILE"
 
 # Restart dhcpcd
-if [ $DEBUG -eq 1 ]
+if [ $DEBUG -ne 1 ]
 then
 	echo "Restarting dhcpcd"
 	service dhcpcd restart
-	echo "Setting up $IFACE_OUT interface"
+	echo "Setting up network interfaces"
 	ifdown $IFACE_OUT
 	ifup $IFACE_OUT
 	ifdown $IFACE_IN
@@ -88,10 +88,11 @@ sed -e "s/\${IFACE_OUT}/$IFACE_OUT/" \
 	-e "s/\${DHCP_RANGE_END}/$DHCP_RANGE_END/" dnsmasq-template.conf > $DNSMASQ_CONF_FILE
 
 # Enable ipv4 forwarding
-if [ $DEBUG -eq 1 ]
+if [ $DEBUG -ne 1 ]
 then
 	echo "Enabling ipv4 forwarding"
 	sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
+	sed -i "s/.*net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/" /etc/sysctl.conf
 fi
 
 # Setup iptables
@@ -99,3 +100,5 @@ echo "Adding iptables entries"
 iptables -t nat -A POSTROUTING -o $IFACE_IN -j MASQUERADE
 iptables -A FORWARD -i $IFACE_IN -o $IFACE_OUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 iptables -A FORWARD -i $IFACE_OUT -o $IFACE_IN -j ACCEPT
+
+echo "Done! Now run run-hostapd.sh to start your router."
